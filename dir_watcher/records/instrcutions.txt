@@ -1,0 +1,5 @@
+Run the main.go file
+
+Drop the users.json from data folder to records 
+
+Watch the terminal for the output
