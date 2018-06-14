@@ -1,55 +1,61 @@
-package functions
+package main
 
 import (
 	"log"
-
-	mgo "gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 )
 
-type Callback struct {
-	data interface{}
-	err  error
+// bulkInsert : Function inserts the data in bulk to the collection
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// 		data(Array of Objects) : the object which has to be inserted
+// Output Parameters
+// 		boolean : whether operation was successfull or not
+// 		error : if it was error then return error else nil
+func bulkInsert(bulkInsertStruct *BulkInsert) (bool, error) {
+	var records bool = true
+	bulk := bulkInsertStruct.Collection.Bulk()
+	bulk.Insert(bulkInsertStruct.Data)
+	_, err := bulk.Run()
+	if err != nil {
+		log.Fatal(err)
+		records = false
+	}
+	return records, err
 }
 
-// Insert : Function inserts the data object into the collection
+// insert : Function inserts the data object into the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		data(Object) : the object which has to be inserted
 // Output Parameters
 // 		boolean : whether operation was successfull or not
 // 		error : if it was error then return error else nil
-
-func Insert(collection *mgo.Collection, data interface{}) (bool, error) {
-	err := collection.Insert(&data)
+func insert(insertStruct *Insert) (bool, error) {
+	err := insertStruct.Collection.Insert(&insertStruct.Data)
 	if err != nil {
-		log.Println("Error in the Insert function: ", err)
+		log.Fatal(err)
 		return false, err
 	}
 	return true, err
 }
 
-// InsertAsync : Function inserts the data object into the collection
+// insertAsync : Function inserts the data object into the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		data(Object) : the object which has to be inserted
-// 		callback(channel) : passes the results to the callback after
+//		callback (channel) : which returns data to goroutine
 // Output Parameters
-// 		boolean : whether operation was successfull or not
-// 		error : if it was error then return error else nil
+// 		callback : sends output back to channel
 
-func InsertAsync(collection *mgo.Collection, data interface{}, callback chan *Callback) {
-	var result bool = true
-	err := collection.Insert(&data)
-	if err != nil {
-		log.Println("Error in the Insert function: ", err)
-		result = false
-	}
-
-	callback <- &Callback{result, err}
+func insertAsync(insertStruct *Insert, callback chan *Callback) {
+	records, err := insert(insertStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
 }
 
-// Update : Function Updates the record into the collection
+// update : Function Updates the record into the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		query(Object) : the bson object which holds the update criteria
@@ -58,16 +64,32 @@ func InsertAsync(collection *mgo.Collection, data interface{}, callback chan *Ca
 // 		boolean : whether operation was successfull or not
 // 		error : if it was error then return error else nil
 
-func Update(collection *mgo.Collection, query bson.M, data interface{}) (bool, error) {
-	err := collection.Update(query, data)
+func update(updateStruct *Update) (bool, error) {
+	err := updateStruct.Collection.UpdateId(updateStruct.Id, updateStruct.Data)
 	if err != nil {
-		log.Println("Error in the Insert function: ", err)
+		log.Fatal(err)
 		return false, err
 	}
 	return true, nil
 }
 
-// UpdateAll : Function Updates all the record into the collection
+// updateAsync : Function Updates the record into the collection
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// 		query(Object) : the bson object which holds the update criteria
+// 		data(Object) : the object which has to be inserted
+//		callback (channel) : which returns data to goroutine
+// Output Parameters
+// 		Callback : sends output back to channel
+func updateAsync(updateStruct *Update, callback chan *Callback) {
+	records, err := update(updateStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+// updateAll : Function Updates all the record into the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		query(Object) : the bson object which holds the update criteria
@@ -76,31 +98,63 @@ func Update(collection *mgo.Collection, query bson.M, data interface{}) (bool, e
 // 		info : details about the operation affected
 // 		error : if it was error then return error else nil
 
-func UpdateAll(collection *mgo.Collection, query bson.M, data interface{}) (interface{}, error) {
-	info, err := collection.UpdateAll(query, data)
+func updateAll(updateAllStruct *UpdateAll) (interface{}, error) {
+	records, err := updateAllStruct.Collection.UpdateAll(updateAllStruct.Query, updateAllStruct.Data)
 	if err != nil {
-		log.Println("Error in the Insert function: ", info)
+		log.Fatal(err)
 		return nil, err
 	}
-	return info, nil
+	return records, nil
 }
 
-//	FindByID : Function FindByID finds and returns record by Hexadecimal ID
+// updateAllAsync : Function Updates all the record into the collection
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// 		query(Object) : the bson object which holds the update criteria
+// 		data(Object) : the object which has to be inserted
+//		callback (channel) : which returns data to goroutine
+// Output Parameters
+// 		callback : sends output back to channel
+
+func updateAllAsync(updateAllStruct *UpdateAll, callback chan *Callback) {
+	records, err := updateAll(updateAllStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+//	findByID : Function FindByID finds and returns record by Hexadecimal ID
 //	Input Parameters :
 //		collection *mgo.Collection : Mongo Collection Object
 //		id : bson.ObjectId
 //	Output :
 //		interface{} : Returns Mongo Objects
-func FindByID(collection *mgo.Collection, id bson.ObjectId) (interface{}, error) {
-	var record interface{}
-	err := collection.FindId(id).One(&record)
+func findByID(findByIDStruct *FindByID) (interface{}, error) {
+	var records interface{}
+	err := findByIDStruct.Collection.FindId(findByIDStruct.Id).One(&records)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return record, err
+	return records, err
 }
 
-// Find : Function finds the record into the collection according to the query/criteria
+//	findByIDAsync : Function FindByIDAsync finds and returns record by Hexadecimal ID
+//	Input Parameters :
+//		collection *mgo.Collection : Mongo Collection Object
+//		id : bson.ObjectId
+//		callback (channel) : which returns data to goroutine
+//	Output :
+//		callback : sends output back to channel
+func findByIDAsync(findByIDStruct *FindByID, callback chan *Callback) {
+	records, err := findByID(findByIDStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+// find : Function finds the record into the collection according to the query/criteria
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		query(Bson Object) : the criteria which has to be evaluated
@@ -108,22 +162,22 @@ func FindByID(collection *mgo.Collection, id bson.ObjectId) (interface{}, error)
 // Output Parameters
 // 		error : if it was error then return error else nil
 // 		boolean : whether operation was successfull or not
-func Find(collection *mgo.Collection, query bson.M, options map[string]int) ([]interface{}, error) {
+func find(findStruct *Find) ([]interface{}, error) {
 
 	var records []interface{}
 	var err error
 
-	limit, isLimit := options["limit"]
-	skip, isSkip := options["isSkip"]
+	limit, isLimit := findStruct.Options["limit"]
+	skip, isSkip := findStruct.Options["isSkip"]
 
 	if isLimit && isSkip {
-		err = collection.Find(query).Skip(skip).Limit(limit).All(&records)
+		err = findStruct.Collection.Find(findStruct.Query).Skip(skip).Limit(limit).All(&records)
 	} else if isLimit {
-		err = collection.Find(query).Limit(limit).All(&records)
+		err = findStruct.Collection.Find(findStruct.Query).Limit(limit).All(&records)
 	} else if isSkip {
-		err = collection.Find(query).Skip(skip).All(&records)
+		err = findStruct.Collection.Find(findStruct.Query).Skip(skip).All(&records)
 	} else {
-		err = collection.Find(query).All(&records)
+		err = findStruct.Collection.Find(findStruct.Query).All(&records)
 	}
 
 	if err != nil {
@@ -133,30 +187,59 @@ func Find(collection *mgo.Collection, query bson.M, options map[string]int) ([]i
 	return records, err
 }
 
-// FindAll : Function finds all the records into the collection
+// find : Function finds the record into the collection according to the query/criteria
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// 		query(Bson Object) : the criteria which has to be evaluated
+//		options (map[string]int) : other parameters like limit. skip, sort, etc
+//		callback (channel) : which returns data to goroutine
+// Output Parameters
+// 		callback : returns data to channel
+func findAsync(findStruct *Find, callback chan *Callback) {
+	records, err := find(findStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+// findAll : Function finds all the records into the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // Output Parameters
 // 		records : all the records present in database
 // 		error : if it was error then return error else nil
-func FindAll(collection *mgo.Collection) ([]interface{}, error) {
+func findAll(findAllStruct *FindAll) ([]interface{}, error) {
 	var records []interface{}
-	err := collection.Find(nil).All(&records)
+	err := findAllStruct.Collection.Find(nil).All(&records)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return records, err
 }
 
-// Remove : Function removes the record from the collection as per criteria/query
+// findAllAsync : Function finds all the records into the collection
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// Output Parameters
+// 		Callback : returns data to channel
+func findAllAsync(findAllStruct *FindAll, callback chan *Callback) {
+	records, err := findAll(findAllStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+// remove : Function removes the record from the collection as per criteria/query
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // 		query(Bson Object) : the criteria which has to be evaluated
 // Output Parameters
 // 		boolean : returns true / false depending on output of operation
 // 		error : if it was error then return error else nil
-func Remove(collection *mgo.Collection, query bson.M) (bool, error) {
-	err := collection.Remove(query)
+func remove(removeStruct *Remove) (bool, error) {
+	err := removeStruct.Collection.Remove(removeStruct.Query)
 	if err != nil {
 		log.Fatal(err)
 		return false, err
@@ -164,18 +247,47 @@ func Remove(collection *mgo.Collection, query bson.M) (bool, error) {
 	return true, err
 }
 
-// RemoveAll : Function removes all the record from the collection
+// removeAsync : Function removes the record from the collection as per criteria/query
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+// 		query(Bson Object) : the criteria which has to be evaluated
+//		callback (channel) : which returns data to goroutine
+// Output Parameters
+// 		Callback : returns data to channel
+func removeAsync(removeStruct *Remove, callback chan *Callback) {
+	records, err := remove(removeStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
+}
+
+// removeAll : Function removes all the record from the collection
 // Input Parameters
 // 		collection (Mgo Object) : Mongo Collection Object
 // Output Parameters
-// 		info : returns info object as output of operation
+// 		records : returns info object as output of operation
 // 		error : if it was error then return error else nil
-func RemoveAll(collection *mgo.Collection) (interface{}, error) {
-	info, err := collection.RemoveAll(nil)
+func removeAll(removeAllStruct *RemoveAll) (interface{}, error) {
+	records, err := removeAllStruct.Collection.RemoveAll(nil)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
 	}
 
-	return info, nil
+	return records, nil
+}
+
+// removeAll : Function removes all the record from the collection
+// Input Parameters
+// 		collection (Mgo Object) : Mongo Collection Object
+//		Callback (channel) : which returns data to goroutine
+// Output Parameters
+// 		Callback : returns data to channel
+func removeAllAsync(removeAllStruct *RemoveAll, callback chan *Callback) {
+	records, err := removeAll(removeAllStruct)
+	cb := new(Callback)
+	cb.Data = records
+	cb.Error = err
+	callback <- cb
 }
