@@ -6,58 +6,58 @@ import (
 )
 
 type Callback struct {
-	Data  interface{} `json:"data"`
-	Error error       `json:"error"`
+	Data  interface{}
+	Error error
 }
 
 type Insert struct {
-	Collection *mgo.Collection `json:"collection"`
-	Data       interface{}     `json:"data"`
+	Collection *mgo.Collection
+	Data       interface{}
 }
 
 type BulkInsert struct {
-	Collection *mgo.Collection `json:"collection"`
-	Data       []interface{}   `json:"data"`
+	Collection *mgo.Collection
+	Data       []interface{}
 }
 
 type InsertAsync struct {
-	Collection *mgo.Collection `json:"collection"`
-	Data       interface{}     `json:"data"`
-	Callback   chan *Callback  `json:"callback"`
+	Collection *mgo.Collection
+	Data       interface{}
+	Callback   chan *Callback
 }
 
 type Update struct {
-	Collection *mgo.Collection `json:"collection"`
-	Id         bson.ObjectId   `json:"id"`
-	Data       interface{}     `json:"data"`
+	Collection *mgo.Collection
+	Id         bson.ObjectId
+	Data       interface{}
 }
 
 type UpdateAll struct {
-	Collection *mgo.Collection `json:"collection"`
-	Query      bson.M          `json:"query"`
-	Data       interface{}     `json:"data"`
+	Collection *mgo.Collection
+	Query      bson.M
+	Data       interface{}
 }
 
 type FindByID struct {
-	Collection *mgo.Collection `json:"collection"`
-	Id         bson.ObjectId   `json:"id"`
+	Collection *mgo.Collection
+	Id         bson.ObjectId
 }
 
 type Find struct {
-	Collection *mgo.Collection `json:"collection"`
-	Query      bson.M          `json:"query"`
-	Options    map[string]int  `json:"options"`
+	Collection *mgo.Collection
+	Query      bson.M
+	Options    map[string]int
 }
 
 type FindAll struct {
-	Collection *mgo.Collection `json:"collection"`
+	Collection *mgo.Collection
 }
 
 type Remove struct {
-	Collection *mgo.Collection `json:"collection"`
-	Query      bson.M          `json:"query"`
+	Collection *mgo.Collection
+	Query      bson.M
 }
 
 type RemoveAll struct {
-	Collection *mgo.Collection `json:"collection"`
+	Collection *mgo.Collection
 }
